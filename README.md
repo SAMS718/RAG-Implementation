@@ -1,48 +1,48 @@
-# 🧠 RAG Pipeline (LangChain + Chroma + HuggingFace) — Ingestion + Retrieval
+# 🧠 RAG Pipeline (LangChain + Chroma + HuggingFace) — Fully Offline
 
-This project demonstrates a **complete Retrieval pipeline** of a RAG system using LangChain. It includes:
+This project implements a **complete Retrieval-Augmented Generation (RAG) pipeline** using LangChain, ChromaDB, and HuggingFace models.
 
-* 📥 Document ingestion
-* ✂️ Chunking
-* 🧠 Embedding generation (HuggingFace - free)
-* 🗄️ Vector storage using ChromaDB
-* 🔍 Semantic retrieval (NO LLM used)
+Unlike typical implementations, this project uses **direct transformer model inference (`model.generate`) instead of pipeline APIs**, ensuring better compatibility and stability across different environments.
 
 ---
 
 ## 🚀 Features
 
-* Load `.txt` files from a directory
-* Split documents into chunks
-* Generate embeddings locally (no API cost)
-* Store vectors in ChromaDB
-* Retrieve top-k relevant documents using semantic search
-* Fully offline after initial model download
+* 📂 Load `.txt` documents from a directory
+* ✂️ Split documents into chunks
+* 🧠 Generate embeddings using HuggingFace (offline & free)
+* 🗄️ Store embeddings in Chroma vector database
+* 🔍 Retrieve top-k relevant chunks using semantic search
+* 🤖 Generate answers using FLAN-T5 (no API required)
+* ⚡ Fully offline after initial model download
 
 ---
 
 ## 🏗️ Architecture
 
-```id="arch123"
+```id="arch002"
 Ingestion Phase:
 Documents → Loader → Text Splitter → Embeddings → ChromaDB
 
 Retrieval Phase:
 Query → Embedding → Similarity Search → Top-K Documents
+
+Generation Phase:
+Context + Query → FLAN-T5 (model.generate) → Final Answer
 ```
 
 ---
 
 ## 📁 Project Structure
 
-```id="struct456"
+```id="struct002"
 RAG_Code/
 │
 ├── docs/                  # Input documents (.txt)
 ├── db/
-│   └── chroma_db/         # Persisted vector store
+│   └── chroma_db/         # Persisted vector database
 ├── ingestion_pipeline.py  # Creates vector DB
-├── retrieval_pipeline.py  # Retrieves relevant documents
+├── retrieval_pipeline.py  # Retrieval + generation
 ├── .env
 └── README.md
 ```
@@ -51,39 +51,41 @@ RAG_Code/
 
 ## ⚙️ Installation
 
-### 1️⃣ Clone repo
+### 1️⃣ Clone Repository
 
-```bash id="cmd1"
+```bash id="cmd21"
 git clone https://github.com/your-username/rag-pipeline.git
 cd rag-pipeline
 ```
 
-### 2️⃣ Create virtual environment
+---
 
-```bash id="cmd2"
+### 2️⃣ Create Virtual Environment
+
+```bash id="cmd22"
 python -m venv venv
 ```
 
-### Activate:
+Activate:
 
 * Windows:
 
-```bash id="cmd3"
+```bash id="cmd23"
 venv\Scripts\activate
 ```
 
 * Mac/Linux:
 
-```bash id="cmd4"
+```bash id="cmd24"
 source venv/bin/activate
 ```
 
 ---
 
-### 3️⃣ Install dependencies
+### 3️⃣ Install Dependencies
 
-```bash id="cmd5"
-pip install langchain langchain-community langchain-chroma langchain-text-splitters sentence-transformers python-dotenv
+```bash id="cmd25"
+pip install langchain langchain-community langchain-chroma langchain-text-splitters sentence-transformers transformers torch python-dotenv
 ```
 
 ---
@@ -94,7 +96,7 @@ pip install langchain langchain-community langchain-chroma langchain-text-splitt
 
 Place `.txt` files inside:
 
-```id="cmd6"
+```id="cmd26"
 docs/
 ```
 
@@ -102,101 +104,125 @@ docs/
 
 ### ⚙️ Step 2: Run Ingestion Pipeline
 
-```bash id="cmd7"
+```bash id="cmd27"
 python ingestion_pipeline.py
 ```
 
-✔️ This will:
-
-* Load documents
-* Split into chunks
-* Generate embeddings
-* Store them in ChromaDB
+✔️ Creates vector embeddings and stores them in ChromaDB
 
 ---
 
-### 🔍 Step 3: Run Retrieval Pipeline
+### 🔍 Step 3: Run Retrieval + Generation Pipeline
 
-```bash id="cmd8"
+```bash id="cmd28"
 python retrieval_pipeline.py
 ```
 
-✔️ This will:
-
-* Convert query into embedding
-* Perform similarity search
-* Return top-k relevant chunks
+✔️ Retrieves relevant chunks and generates an answer
 
 ---
 
-## 🧠 Embedding Model
+## 🧠 Models Used
 
-Using:
+### 🔹 Embeddings
 
-```id="cmd9"
+```id="cmd29"
 all-MiniLM-L6-v2
 ```
 
-* Lightweight (~100MB)
-* Fast and efficient
-* Works offline
-* Ideal for semantic search
+* Lightweight and fast
+* Runs locally
+* Optimized for semantic similarity
+
+---
+
+### 🔹 LLM (Answer Generation)
+
+```id="cmd30"
+google/flan-t5-base
+```
+
+* Instruction-tuned model
+* Good for question answering
+* Works fully offline
+
+---
+
+## ⚠️ Important Design Decision
+
+Instead of using:
+
+```python id="cmd31"
+pipeline("text2text-generation")
+```
+
+This project uses:
+
+```python id="cmd32"
+model.generate()
+```
+
+### ✅ Why?
+
+* Avoids **transformers version conflicts**
+* More stable across environments
+* Gives **better control over generation**
+* Industry-relevant approach
 
 ---
 
 ## 🔍 Sample Query
 
-```id="cmd10"
-query = "which island does SpaceX lease for its launches in the Pacific?"
-```
-
-### Output:
-
-```id="cmd11"
-User Query: which island does SpaceX lease...
-
---- Context ---
-Document 1:
-[Relevant chunk]
-
-Document 2:
-[Relevant chunk]
+```id="cmd33"
+query = "Where is SpaceX headquartered?"
 ```
 
 ---
 
-## ⚠️ Important Notes
+## 🧪 Sample Output
 
-* ❌ No LLM is used in retrieval phase
-* ✅ Results are purely based on **vector similarity (cosine)**
-* ⚡ ChromaDB automatically handles similarity metric
-* 📌 Ensure same embedding model is used in ingestion & retrieval
+```id="cmd34"
+User Query: Where is SpaceX headquartered?
+
+--- Generated Response ---
+SpaceX is headquartered at Starbase near Brownsville, Texas.
+```
+
+---
+
+## ⚠️ Notes
+
+* ❌ No OpenAI / paid API required
+* ⚠️ Answer depends on retrieved context
+* 📌 If context lacks answer → model may fail or respond minimally
+* 📦 First run downloads models (~200–300MB)
 
 ---
 
 ## 🔥 Key Learnings
 
-* Difference between **Ingestion vs Retrieval phase**
-* Importance of **consistent embeddings**
-* How vector databases perform semantic search
-* Building blocks of a full RAG system
+* Difference between **retrieval vs generation**
+* Importance of **embedding consistency**
+* Limitations of RAG when context is missing
+* Handling **transformer compatibility issues**
+* Using **direct model inference instead of pipelines**
 
 ---
 
 ## 🚀 Future Improvements
 
-* Add LLM for answer generation (full RAG)
-* Build API (FastAPI)
-* Add UI (Streamlit / React)
-* Support PDFs, HTML, and other formats
-* Implement hybrid search (keyword + vector)
+* Add reranking (improve retrieval accuracy)
+* Integrate LLM APIs (OpenAI / Claude)
+* Build UI (Streamlit / React)
+* Add support for PDFs and structured data
+* Implement conversational memory
 
 ---
 
 ## 🏷️ Tags
 
-```id="cmd12"
-#RAG #LangChain #ChromaDB #HuggingFace #NLP #VectorSearch #AIProjects
+```id="cmd35"
+#RAG #LangChain #ChromaDB #HuggingFace #Transformers #NLP #AIProjects
 ```
 
 ---
