@@ -10,7 +10,7 @@ from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # HuggingFace LLM pipeline
 from langchain_community.llms import HuggingFacePipeline
-from transformers import pipeline
+from transformers import pipeline, AutoTokenizer, AutoModelForSeq2SeqLM
 
 # Loading environment variables (good practice, even if not used here)
 from dotenv import load_dotenv
@@ -52,40 +52,46 @@ relevant_docs = retriever.invoke(query)
 # Combine all retrieved chunks into a single context string
 context = "\n\n".join([doc.page_content for doc in relevant_docs])
 
-# Prompt template → guides the LLM behavior
+# Prompt template → guides the LLM behavior (simplified for better results)
 combined_input = f"""
-Answer ONLY using the provided documents.
-If the answer is not found, say "Not found in context".
-
-Documents:
+Context:
 {context}
 
-Question:
-{query}
+Question: {query}
 
-Answer:
+Answer briefly:
 """
 
 
 # -----------------------------
-# Step 4: HuggingFace LLM (FLAN-T5)
+# Step 4: HuggingFace LLM (DIRECT MODEL CALL - FIXED)
 # -----------------------------
-# Using text2text-generation → correct task for FLAN-T5
-hf_pipeline = pipeline(
-    "text-generation",   # ✅ FIXED (compatible) also lightweight...
-    model="google/flan-t5-base",
-    max_length=512
-)
+from transformers import AutoTokenizer, AutoModelForSeq2SeqLM
 
-# Wrap HuggingFace pipeline with LangChain interface
-llm = HuggingFacePipeline(pipeline=hf_pipeline)
+model_name = "google/flan-t5-base"
+
+# Load tokenizer and model
+tokenizer = AutoTokenizer.from_pretrained(model_name)
+model = AutoModelForSeq2SeqLM.from_pretrained(model_name)
+
+# Function to generate answer manually (no pipeline issues)
+def generate_answer(prompt):
+    inputs = tokenizer(prompt, return_tensors="pt", truncation=True, max_length=512)
+    
+    outputs = model.generate(
+        **inputs,
+        max_new_tokens=150,
+        do_sample=True,
+        temperature=0.3
+    )
+    
+    return tokenizer.decode(outputs[0], skip_special_tokens=True)
 
 
 # -----------------------------
 # Step 5: Generate Final Answer
 # -----------------------------
-# Pass combined prompt to LLM
-response = llm.invoke(combined_input)
+response = generate_answer(combined_input)
 
 print("\nUser Query:")
 print(query)
