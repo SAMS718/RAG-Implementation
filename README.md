@@ -1,8 +1,13 @@
-# 🧠 RAG Pipeline (LangChain + Chroma + HuggingFace) — Fully Offline
+# 🧠 Conversational RAG Pipeline (LangChain + Chroma + HuggingFace) — Fully Offline
 
-This project implements a **complete Retrieval-Augmented Generation (RAG) pipeline** using LangChain, ChromaDB, and HuggingFace models.
+This project implements a **complete conversational Retrieval-Augmented Generation (RAG) system** using LangChain, ChromaDB, and HuggingFace models.
 
-Unlike typical implementations, this project uses **direct transformer model inference (`model.generate`) instead of pipeline APIs**, ensuring better compatibility and stability across different environments.
+Unlike basic RAG pipelines, this system supports:
+
+* 🔁 **Conversation history**
+* 🔍 **Context-aware query rewriting**
+* 🤖 **Answer generation using local LLM (FLAN-T5)**
+* ⚡ **Fully offline execution (no OpenAI API required)**
 
 ---
 
@@ -10,39 +15,41 @@ Unlike typical implementations, this project uses **direct transformer model inf
 
 * 📂 Load `.txt` documents from a directory
 * ✂️ Split documents into chunks
-* 🧠 Generate embeddings using HuggingFace (offline & free)
-* 🗄️ Store embeddings in Chroma vector database
-* 🔍 Retrieve top-k relevant chunks using semantic search
-* 🤖 Generate answers using FLAN-T5 (no API required)
-* ⚡ Fully offline after initial model download
+* 🧠 Generate embeddings using HuggingFace (offline)
+* 🗄️ Store vectors in ChromaDB
+* 🔍 Retrieve relevant documents using semantic search
+* 💬 Maintain **conversation history**
+* 🔄 Rewrite queries based on previous context
+* 🤖 Generate answers using FLAN-T5 (`model.generate`)
+* ⚡ Works fully offline after model download
 
 ---
 
 ## 🏗️ Architecture
 
-```id="arch002"
+```id="arch003"
 Ingestion Phase:
 Documents → Loader → Text Splitter → Embeddings → ChromaDB
 
 Retrieval Phase:
-Query → Embedding → Similarity Search → Top-K Documents
+User Query → Context-Aware Rewrite → Embedding → Similarity Search
 
 Generation Phase:
-Context + Query → FLAN-T5 (model.generate) → Final Answer
+Conversation History + Context + Query → FLAN-T5 → Final Answer
 ```
 
 ---
 
 ## 📁 Project Structure
 
-```id="struct002"
+```id="struct003"
 RAG_Code/
 │
 ├── docs/                  # Input documents (.txt)
 ├── db/
-│   └── chroma_db/         # Persisted vector database
-├── ingestion_pipeline.py  # Creates vector DB
-├── retrieval_pipeline.py  # Retrieval + generation
+│   └── chroma_db/         # Vector database
+├── ingestion_pipeline.py  # Builds vector store
+├── retrieval_pipeline.py  # Conversational RAG system
 ├── .env
 └── README.md
 ```
@@ -53,16 +60,16 @@ RAG_Code/
 
 ### 1️⃣ Clone Repository
 
-```bash id="cmd21"
-git clone https://github.com/your-username/rag-pipeline.git
-cd rag-pipeline
+```bash id="cmd41"
+git clone https://github.com/your-username/conversational-rag.git
+cd conversational-rag
 ```
 
 ---
 
 ### 2️⃣ Create Virtual Environment
 
-```bash id="cmd22"
+```bash id="cmd42"
 python -m venv venv
 ```
 
@@ -70,13 +77,13 @@ Activate:
 
 * Windows:
 
-```bash id="cmd23"
+```bash id="cmd43"
 venv\Scripts\activate
 ```
 
 * Mac/Linux:
 
-```bash id="cmd24"
+```bash id="cmd44"
 source venv/bin/activate
 ```
 
@@ -84,7 +91,7 @@ source venv/bin/activate
 
 ### 3️⃣ Install Dependencies
 
-```bash id="cmd25"
+```bash id="cmd45"
 pip install langchain langchain-community langchain-chroma langchain-text-splitters sentence-transformers transformers torch python-dotenv
 ```
 
@@ -96,7 +103,7 @@ pip install langchain langchain-community langchain-chroma langchain-text-splitt
 
 Place `.txt` files inside:
 
-```id="cmd26"
+```id="cmd46"
 docs/
 ```
 
@@ -104,21 +111,33 @@ docs/
 
 ### ⚙️ Step 2: Run Ingestion Pipeline
 
-```bash id="cmd27"
+```bash id="cmd47"
 python ingestion_pipeline.py
 ```
 
-✔️ Creates vector embeddings and stores them in ChromaDB
-
 ---
 
-### 🔍 Step 3: Run Retrieval + Generation Pipeline
+### 💬 Step 3: Start Chat
 
-```bash id="cmd28"
+```bash id="cmd48"
 python retrieval_pipeline.py
 ```
 
-✔️ Retrieves relevant chunks and generates an answer
+---
+
+## 💬 Example Interaction
+
+```id="cmd49"
+Ask me questions! Type 'quit' to exit.
+
+Your question: Where is SpaceX headquartered?
+
+Answer: SpaceX is headquartered at Starbase near Brownsville, Texas.
+
+Your question: Where was it located before?
+
+Answer: It was previously headquartered in Hawthorne, California.
+```
 
 ---
 
@@ -126,103 +145,100 @@ python retrieval_pipeline.py
 
 ### 🔹 Embeddings
 
-```id="cmd29"
+```id="cmd50"
 all-MiniLM-L6-v2
 ```
 
-* Lightweight and fast
-* Runs locally
-* Optimized for semantic similarity
+* Lightweight (~100MB)
+* Fast semantic similarity
+* Fully local
 
 ---
 
 ### 🔹 LLM (Answer Generation)
 
-```id="cmd30"
+```id="cmd51"
 google/flan-t5-base
 ```
 
-* Instruction-tuned model
-* Good for question answering
-* Works fully offline
+* Instruction-tuned
+* Suitable for Q&A
+* Runs offline
 
 ---
 
-## ⚠️ Important Design Decision
+## 🔥 Key Implementation Details
 
-Instead of using:
+### 🧠 Conversation Memory
 
-```python id="cmd31"
-pipeline("text2text-generation")
-```
-
-This project uses:
-
-```python id="cmd32"
-model.generate()
-```
-
-### ✅ Why?
-
-* Avoids **transformers version conflicts**
-* More stable across environments
-* Gives **better control over generation**
-* Industry-relevant approach
+* Maintains previous user and AI interactions
+* Injected into prompt as text
+* Enables context-aware responses
 
 ---
 
-## 🔍 Sample Query
+### 🔄 Query Rewriting
 
-```id="cmd33"
-query = "Where is SpaceX headquartered?"
-```
-
----
-
-## 🧪 Sample Output
-
-```id="cmd34"
-User Query: Where is SpaceX headquartered?
-
---- Generated Response ---
-SpaceX is headquartered at Starbase near Brownsville, Texas.
-```
+* Converts follow-up questions into standalone queries
+* Improves retrieval accuracy
 
 ---
 
-## ⚠️ Notes
+### ⚙️ Direct Model Inference
 
-* ❌ No OpenAI / paid API required
-* ⚠️ Answer depends on retrieved context
-* 📌 If context lacks answer → model may fail or respond minimally
-* 📦 First run downloads models (~200–300MB)
+Instead of:
+
+```python id="cmd52"
+pipeline(...)
+```
+
+We use:
+
+```python id="cmd53"
+model.generate(...)
+```
+
+### ✅ Benefits:
+
+* Avoids transformer version issues
+* More stable execution
+* Better control over outputs
+
+---
+
+## ⚠️ Limitations
+
+* ❌ No advanced reasoning like GPT-4
+* ⚠️ Depends heavily on retrieved documents
+* ⚠️ Limited conversation memory quality
+* 📦 Initial model download required
 
 ---
 
 ## 🔥 Key Learnings
 
-* Difference between **retrieval vs generation**
-* Importance of **embedding consistency**
-* Limitations of RAG when context is missing
-* Handling **transformer compatibility issues**
-* Using **direct model inference instead of pipelines**
+* Building **end-to-end conversational RAG systems**
+* Handling **context-aware retrieval**
+* Managing **LLM limitations in offline setups**
+* Designing **prompt-based memory systems**
+* Avoiding dependency on paid APIs
 
 ---
 
 ## 🚀 Future Improvements
 
-* Add reranking (improve retrieval accuracy)
-* Integrate LLM APIs (OpenAI / Claude)
-* Build UI (Streamlit / React)
-* Add support for PDFs and structured data
-* Implement conversational memory
+* Add reranking for better retrieval
+* Integrate OpenAI / Claude (hybrid system)
+* Build UI (Streamlit / React chat interface)
+* Add support for PDFs & structured data
+* Implement memory optimization
 
 ---
 
 ## 🏷️ Tags
 
-```id="cmd35"
-#RAG #LangChain #ChromaDB #HuggingFace #Transformers #NLP #AIProjects
+```id="cmd54"
+#RAG #ConversationalAI #LangChain #ChromaDB #HuggingFace #Transformers #NLP #AIProjects
 ```
 
 ---
