@@ -1,36 +1,48 @@
-# 🧠 RAG Ingestion Pipeline (LangChain + Chroma + HuggingFace)
+# 🧠 RAG Pipeline (LangChain + Chroma + HuggingFace) — Ingestion + Retrieval
 
-This project implements a **Retrieval-Augmented Generation (RAG) ingestion pipeline** using LangChain. It processes raw text documents, converts them into embeddings, and stores them in a vector database for efficient semantic search and retrieval.
+This project demonstrates a **complete Retrieval pipeline** of a RAG system using LangChain. It includes:
+
+* 📥 Document ingestion
+* ✂️ Chunking
+* 🧠 Embedding generation (HuggingFace - free)
+* 🗄️ Vector storage using ChromaDB
+* 🔍 Semantic retrieval (NO LLM used)
 
 ---
 
 ## 🚀 Features
 
-* 📂 Load `.txt` documents from a directory
-* ✂️ Split documents into manageable chunks
-* 🔎 Generate embeddings using HuggingFace (free & offline)
-* 🗄️ Store embeddings in Chroma vector database
-* ⚡ Ready for integration with a RAG-based chatbot
+* Load `.txt` files from a directory
+* Split documents into chunks
+* Generate embeddings locally (no API cost)
+* Store vectors in ChromaDB
+* Retrieve top-k relevant documents using semantic search
+* Fully offline after initial model download
 
 ---
 
-## 🏗️ Pipeline Architecture
+## 🏗️ Architecture
 
-```
-Documents → Loader → Text Splitter → Embeddings → Vector Store (Chroma)
+```id="arch123"
+Ingestion Phase:
+Documents → Loader → Text Splitter → Embeddings → ChromaDB
+
+Retrieval Phase:
+Query → Embedding → Similarity Search → Top-K Documents
 ```
 
 ---
 
 ## 📁 Project Structure
 
-```
+```id="struct456"
 RAG_Code/
 │
-├── docs/                # Input text files
+├── docs/                  # Input documents (.txt)
 ├── db/
-│   └── chroma_db/       # Persisted vector database
-├── ingestion_pipeline.py
+│   └── chroma_db/         # Persisted vector store
+├── ingestion_pipeline.py  # Creates vector DB
+├── retrieval_pipeline.py  # Retrieves relevant documents
 ├── .env
 └── README.md
 ```
@@ -39,36 +51,38 @@ RAG_Code/
 
 ## ⚙️ Installation
 
-### 1️⃣ Clone the repository
+### 1️⃣ Clone repo
 
-```bash
-git clone https://github.com/your-username/rag-ingestion-pipeline.git
-cd rag-ingestion-pipeline
+```bash id="cmd1"
+git clone https://github.com/your-username/rag-pipeline.git
+cd rag-pipeline
 ```
 
 ### 2️⃣ Create virtual environment
 
-```bash
+```bash id="cmd2"
 python -m venv venv
 ```
 
-#### Activate environment:
+### Activate:
 
 * Windows:
 
-```bash
+```bash id="cmd3"
 venv\Scripts\activate
 ```
 
 * Mac/Linux:
 
-```bash
+```bash id="cmd4"
 source venv/bin/activate
 ```
 
+---
+
 ### 3️⃣ Install dependencies
 
-```bash
+```bash id="cmd5"
 pip install langchain langchain-community langchain-chroma langchain-text-splitters sentence-transformers python-dotenv
 ```
 
@@ -76,93 +90,117 @@ pip install langchain langchain-community langchain-chroma langchain-text-splitt
 
 ## 📄 Usage
 
-### 1️⃣ Add documents
+### 🧩 Step 1: Add Documents
 
-Place `.txt` files inside the `docs/` folder.
+Place `.txt` files inside:
 
-### 2️⃣ Run the pipeline
+```id="cmd6"
+docs/
+```
 
-```bash
+---
+
+### ⚙️ Step 2: Run Ingestion Pipeline
+
+```bash id="cmd7"
 python ingestion_pipeline.py
 ```
 
----
+✔️ This will:
 
-## 🔍 What Happens Internally
-
-### 📥 Step 1: Document Loading
-
-* Loads `.txt` files from `docs/` directory
-* Validates file existence
-
-### ✂️ Step 2: Text Splitting
-
-* Splits documents into chunks (default: 800 characters)
-* Helps improve embedding quality
-
-### 🧠 Step 3: Embedding Generation
-
-* Uses **HuggingFace model: `all-MiniLM-L6-v2`**
-* Completely free and runs locally
-
-### 🗄️ Step 4: Vector Storage
-
-* Stores embeddings in **ChromaDB**
-* Persists data in `db/chroma_db/`
+* Load documents
+* Split into chunks
+* Generate embeddings
+* Store them in ChromaDB
 
 ---
 
-## 🧪 Sample Output
+### 🔍 Step 3: Run Retrieval Pipeline
 
+```bash id="cmd8"
+python retrieval_pipeline.py
 ```
+
+✔️ This will:
+
+* Convert query into embedding
+* Perform similarity search
+* Return top-k relevant chunks
+
+---
+
+## 🧠 Embedding Model
+
+Using:
+
+```id="cmd9"
+all-MiniLM-L6-v2
+```
+
+* Lightweight (~100MB)
+* Fast and efficient
+* Works offline
+* Ideal for semantic search
+
+---
+
+## 🔍 Sample Query
+
+```id="cmd10"
+query = "which island does SpaceX lease for its launches in the Pacific?"
+```
+
+### Output:
+
+```id="cmd11"
+User Query: which island does SpaceX lease...
+
+--- Context ---
 Document 1:
-Source: docs/sample.txt
-Content length: 1200 characters
+[Relevant chunk]
 
--- Chunk 1 ---
-Length: 800 characters
-
-Vector store created and saved to db/chroma_db
+Document 2:
+[Relevant chunk]
 ```
 
 ---
 
-## 🔥 Key Highlights
+## ⚠️ Important Notes
 
-* ✅ No OpenAI API required (cost-free setup)
-* ✅ Works offline after first model download
-* ✅ Modular pipeline (easy to extend for full RAG system)
-* ✅ Beginner-friendly and interview-ready project
+* ❌ No LLM is used in retrieval phase
+* ✅ Results are purely based on **vector similarity (cosine)**
+* ⚡ ChromaDB automatically handles similarity metric
+* 📌 Ensure same embedding model is used in ingestion & retrieval
 
 ---
 
-## ⚠️ Notes
+## 🔥 Key Learnings
 
-* Ensure `docs/` folder contains `.txt` files
-* First run may download embedding model (~100MB)
-* For large datasets, consider chunk overlap tuning
+* Difference between **Ingestion vs Retrieval phase**
+* Importance of **consistent embeddings**
+* How vector databases perform semantic search
+* Building blocks of a full RAG system
 
 ---
 
 ## 🚀 Future Improvements
 
-* Add retriever and query system
-* Integrate LLM for full RAG chatbot
-* Support PDF/HTML document loaders
+* Add LLM for answer generation (full RAG)
+* Build API (FastAPI)
 * Add UI (Streamlit / React)
+* Support PDFs, HTML, and other formats
+* Implement hybrid search (keyword + vector)
 
 ---
 
-## 🤝 Contribution
+## 🏷️ Tags
 
-Feel free to fork this repo and enhance it with:
-
-* Better chunking strategies
-* Advanced embedding models
-* Hybrid search
+```id="cmd12"
+#RAG #LangChain #ChromaDB #HuggingFace #NLP #VectorSearch #AIProjects
+```
 
 ---
 
 ## 📜 License
 
-This project is open-source and available under the MIT License.
+MIT License
