@@ -2,243 +2,159 @@
 
 This project implements a **complete conversational Retrieval-Augmented Generation (RAG) system** using LangChain, ChromaDB, and HuggingFace models.
 
-Unlike basic RAG pipelines, this system supports:
+It includes:
 
-* 🔁 **Conversation history**
-* 🔍 **Context-aware query rewriting**
-* 🤖 **Answer generation using local LLM (FLAN-T5)**
-* ⚡ **Fully offline execution (no OpenAI API required)**
+* 🔍 Semantic retrieval
+* 💬 Conversation history
+* 🔄 Query rewriting
+* 🤖 Local LLM (FLAN-T5)
+* ⚡ Fully offline execution
 
 ---
 
 ## 🚀 Features
 
-* 📂 Load `.txt` documents from a directory
-* ✂️ Split documents into chunks
-* 🧠 Generate embeddings using HuggingFace (offline)
-* 🗄️ Store vectors in ChromaDB
-* 🔍 Retrieve relevant documents using semantic search
-* 💬 Maintain **conversation history**
-* 🔄 Rewrite queries based on previous context
-* 🤖 Generate answers using FLAN-T5 (`model.generate`)
-* ⚡ Works fully offline after model download
+* 📂 Load `.txt` documents
+* ✂️ Advanced text chunking (Recursive splitting)
+* 🧠 HuggingFace embeddings
+* 🗄️ ChromaDB vector storage
+* 🔍 Semantic search
+* 💬 Conversational memory
+* 🤖 Offline answer generation
 
 ---
 
 ## 🏗️ Architecture
 
-```id="arch003"
-Ingestion Phase:
-Documents → Loader → Text Splitter → Embeddings → ChromaDB
+```id="arch004"
+Ingestion:
+Documents → Recursive Text Splitter → Embeddings → ChromaDB
 
-Retrieval Phase:
-User Query → Context-Aware Rewrite → Embedding → Similarity Search
+Retrieval:
+Query → Context-Aware Rewrite → Embedding → Similarity Search
 
-Generation Phase:
-Conversation History + Context + Query → FLAN-T5 → Final Answer
-```
-
----
-
-## 📁 Project Structure
-
-```id="struct003"
-RAG_Code/
-│
-├── docs/                  # Input documents (.txt)
-├── db/
-│   └── chroma_db/         # Vector database
-├── ingestion_pipeline.py  # Builds vector store
-├── retrieval_pipeline.py  # Conversational RAG system
-├── .env
-└── README.md
+Generation:
+History + Context + Query → FLAN-T5 → Answer
 ```
 
 ---
 
 ## ⚙️ Installation
 
-### 1️⃣ Clone Repository
-
-```bash id="cmd41"
-git clone https://github.com/your-username/conversational-rag.git
-cd conversational-rag
-```
-
----
-
-### 2️⃣ Create Virtual Environment
-
-```bash id="cmd42"
-python -m venv venv
-```
-
-Activate:
-
-* Windows:
-
-```bash id="cmd43"
-venv\Scripts\activate
-```
-
-* Mac/Linux:
-
-```bash id="cmd44"
-source venv/bin/activate
-```
-
----
-
-### 3️⃣ Install Dependencies
-
-```bash id="cmd45"
+```bash id="cmd61"
 pip install langchain langchain-community langchain-chroma langchain-text-splitters sentence-transformers transformers torch python-dotenv
 ```
 
 ---
 
-## 📄 Usage
+## ⚠️ Important Update (LangChain Modular Changes)
 
-### 🧩 Step 1: Add Documents
+Recent versions of LangChain have split components into separate packages.
 
-Place `.txt` files inside:
+### ❌ Old Import (deprecated)
 
-```id="cmd46"
-docs/
+```python id="cmd62"
+from langchain.text_splitter import CharacterTextSplitter
+```
+
+### ✅ New Import (correct)
+
+```python id="cmd63"
+from langchain_text_splitters import CharacterTextSplitter, RecursiveCharacterTextSplitter
 ```
 
 ---
 
-### ⚙️ Step 2: Run Ingestion Pipeline
+## ✂️ Text Splitting Strategy
 
-```bash id="cmd47"
-python ingestion_pipeline.py
+This project uses:
+
+```id="cmd64"
+RecursiveCharacterTextSplitter
 ```
+
+### Why?
+
+* Handles large paragraphs better
+* Uses multiple separators (`\n\n`, `\n`, `.`, space)
+* Produces cleaner semantic chunks
+* Improves retrieval accuracy
 
 ---
 
-### 💬 Step 3: Start Chat
+## 💬 Conversational Flow
 
-```bash id="cmd48"
-python retrieval_pipeline.py
-```
-
----
-
-## 💬 Example Interaction
-
-```id="cmd49"
-Ask me questions! Type 'quit' to exit.
-
-Your question: Where is SpaceX headquartered?
-
-Answer: SpaceX is headquartered at Starbase near Brownsville, Texas.
-
-Your question: Where was it located before?
-
-Answer: It was previously headquartered in Hawthorne, California.
+```id="cmd65"
+User Query
+   ↓
+Rewrite Query (based on history)
+   ↓
+Retrieve Documents
+   ↓
+Combine Context + History
+   ↓
+FLAN-T5 (generate answer)
 ```
 
 ---
 
 ## 🧠 Models Used
 
-### 🔹 Embeddings
+### Embeddings
 
-```id="cmd50"
+```id="cmd66"
 all-MiniLM-L6-v2
 ```
 
-* Lightweight (~100MB)
-* Fast semantic similarity
-* Fully local
+### LLM
 
----
-
-### 🔹 LLM (Answer Generation)
-
-```id="cmd51"
+```id="cmd67"
 google/flan-t5-base
 ```
 
-* Instruction-tuned
-* Suitable for Q&A
-* Runs offline
-
 ---
 
-## 🔥 Key Implementation Details
+## ⚙️ Key Design Choices
 
-### 🧠 Conversation Memory
+### ✅ Recursive Text Splitting
 
-* Maintains previous user and AI interactions
-* Injected into prompt as text
-* Enables context-aware responses
+Improves chunk quality → better retrieval
 
----
+### ✅ Direct Model Inference
 
-### 🔄 Query Rewriting
-
-* Converts follow-up questions into standalone queries
-* Improves retrieval accuracy
-
----
-
-### ⚙️ Direct Model Inference
-
-Instead of:
-
-```python id="cmd52"
-pipeline(...)
+```python id="cmd68"
+model.generate()
 ```
 
-We use:
+Avoids pipeline version issues
 
-```python id="cmd53"
-model.generate(...)
-```
+### ✅ Text-Based Memory
 
-### ✅ Benefits:
-
-* Avoids transformer version issues
-* More stable execution
-* Better control over outputs
+Simple and efficient conversational history handling
 
 ---
 
-## ⚠️ Limitations
+## ⚠️ Notes
 
-* ❌ No advanced reasoning like GPT-4
-* ⚠️ Depends heavily on retrieved documents
-* ⚠️ Limited conversation memory quality
-* 📦 Initial model download required
-
----
-
-## 🔥 Key Learnings
-
-* Building **end-to-end conversational RAG systems**
-* Handling **context-aware retrieval**
-* Managing **LLM limitations in offline setups**
-* Designing **prompt-based memory systems**
-* Avoiding dependency on paid APIs
+* LangChain APIs change frequently → modular imports required
+* First run downloads models (~200MB)
+* Retrieval quality directly affects answer quality
 
 ---
 
 ## 🚀 Future Improvements
 
-* Add reranking for better retrieval
-* Integrate OpenAI / Claude (hybrid system)
-* Build UI (Streamlit / React chat interface)
-* Add support for PDFs & structured data
-* Implement memory optimization
+* Hybrid search (keyword + vector)
+* Reranking models
+* UI (Streamlit chat app)
+* Multi-document formats (PDF, HTML)
 
 ---
 
 ## 🏷️ Tags
 
-```id="cmd54"
-#RAG #ConversationalAI #LangChain #ChromaDB #HuggingFace #Transformers #NLP #AIProjects
+```id="cmd69"
+#RAG #LangChain #ChromaDB #HuggingFace #Transformers #ConversationalAI
 ```
 
 ---
